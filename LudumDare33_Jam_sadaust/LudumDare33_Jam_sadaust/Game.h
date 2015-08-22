@@ -14,8 +14,16 @@ private:
 	//PhysicsSystem physSys;
 	InputHandler input;
 	cam camera;
+	D3DLIGHT9 m_Light;
 	DWORD cTime,lTime;
 	double dt;
+
+	//render test
+	SpriteObj spriteTest;
+	PrimObj primTest;
+	D3DMATERIAL9 testMat;
+	RenInfo spriRen,primRen;
+
 public:
 	bool devLost();
 	void resetDev(HWND& hWnd,HINSTANCE& hInsts);
