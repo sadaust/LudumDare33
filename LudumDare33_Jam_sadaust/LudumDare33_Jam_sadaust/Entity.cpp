@@ -5,6 +5,7 @@ Entity::Entity() {
 	setVel(0,0,0);
 	setActive(false);
 	setSize(1);
+	speed = 1;
 	setRot(0);
 	setEat(false);
 }
@@ -40,19 +41,25 @@ void Entity::revPos() {
 }
 
 void Entity::update(double dt) {
-	lPos = pos;
-	pos.x += velocity.x*dt;
-	pos.y += velocity.y*dt;
-	pos.z += velocity.z*dt;
+	if(active) {
+		lPos = pos;
+		pos += velocity*dt*speed*size;
+		/*pos.x += velocity.x*dt;
+		pos.y += velocity.y*dt;
+		pos.z += velocity.z*dt;*/
+	}
 }
 
 void Entity::setCollision(float height, float width) {
 	collisionInfo.height = height;
 	collisionInfo.radius = width;
+	baseCol = collisionInfo;
 }
 
 void Entity::setSize(float a_size) {
 	size = a_size;
+	collisionInfo.height = baseCol.height*size;
+	collisionInfo.radius = baseCol.radius*size;
 }
 
 void Entity::setPos(float x,float y,float z) {
@@ -84,9 +91,10 @@ void Entity::setActive(bool isActive) {
 }
 
 cylinder Entity::getBound() {
-	cylinder temp;
+	/*cylinder temp;
 	temp = collisionInfo;
 	temp.height *= size;
 	temp.radius *= size;
-	return temp;
+	return temp;*/
+	return collisionInfo;
 }

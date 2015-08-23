@@ -9,14 +9,13 @@ The things in the game would be small animals, people and buildings. You start o
 
 # TO DO
 
-
-Enhance Creatures (small animals/humans)
-
 Make World System
 
-Make Buildings' entity 
+Fix Collision
 
-Create collision for buildings system
+Enhance Creatures (small animals/humans) (basic AI)
+
+Come up with a name
 
 Create art?
 

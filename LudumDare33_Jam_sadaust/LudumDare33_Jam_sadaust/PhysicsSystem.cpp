@@ -42,6 +42,31 @@ bool PhysicsSystem::SenseCollision(Entity& a_player, Entity& a_player2) {
 	return false;
 }
 
+bool PhysicsSystem::SenseCollision(Entity& a_ent, Building& a_build) {
+	//2d collison treating player like a cube
+	//check if right eadge of player is outside building left edge
+	/*if((a_ent.getPos().x+a_ent.getSize())<(a_build.getPos().x+a_build.getCol().left)) {
+	//check if left eadge of player is outside building right edge
+	if((a_ent.getPos().x-a_ent.getSize())<(a_build.getPos().x+a_build.getCol().right)) {
+	if((a_ent.getPos().z+a_ent.getSize())<(a_build.getPos().z+a_build.getCol().back)) {
+	if((a_ent.getPos().z-a_ent.getSize())<(a_build.getPos().z+a_build.getCol().front))
+	return true;
+	}
+	}
+	}*/
+
+	if(a_ent.getPos().x < a_build.getPos().x+a_build.getCol().right+a_ent.getBound().radius) {//x,x,right
+		if(a_ent.getPos().x > a_build.getPos().x+a_build.getCol().left-a_ent.getBound().radius) {//x,x,left
+			if(a_ent.getPos().z > a_build.getPos().z+a_build.getCol().back-a_ent.getBound().radius) {//z,z,back
+				if(a_ent.getPos().z < a_build.getPos().z+a_build.getCol().front+a_ent.getBound().radius) {//z,z,front
+					return true;
+				}
+			}
+		}
+	}
+	return false;
+}
+
 
 bool  PhysicsSystem::ResolveCollision(Entity& a_player, Entity& a_player2){
 
@@ -60,42 +85,16 @@ bool  PhysicsSystem::ResolveCollision(Entity& a_player, Entity& a_player2){
 	return true;
 }
 
-//float Distance2D(float a_x, float a_z, float a_x2, float a_z2) {
-//
-//}
-
-
-//bool PlayerWall(D3DXVECTOR3 &a_pos, PrimStruct &a_cube, float a_radius, float a_height) {
-//	float tempX = 0, tempZ = 0, tempDist = 0;
-//
-//	if(a_pos.y <= a_cube.top) {
-//		if(a_pos.y+a_height >= a_cube.bottom) {
-//			for(int i = 0; i < 4; ++i) {
-//				if(i == 0) {
-//					tempX = abs(a_pos.x-a_cube.left); // left,front
-//					tempZ = abs(a_pos.z-a_cube.front);
-//				}
-//				else if(i == 1) {
-//					tempX = abs(a_pos.x-a_cube.left); // left,back
-//					tempZ = abs(a_pos.z-a_cube.back);
-//				}
-//				else if(i == 2) {
-//					tempX = abs(a_pos.x-a_cube.right); // right,back
-//					tempZ = abs(a_pos.z-a_cube.back);
-//				}
-//				else if(i == 3) {
-//					tempX = abs(a_pos.x-a_cube.right); // right,front
-//					tempZ = abs(a_pos.z-a_cube.front);
-//				}
-//				tempDist = tempX*tempX + tempZ*tempZ;
-//				if(tempDist < a_radius*a_radius)
-//					return true;
-//
-//			}
-//		}
-//	}
-//	return false;
-//}
-//
-//
-//
+bool PhysicsSystem::ResolveCollision(Entity& a_ent, Building& a_build) {
+	if(a_ent.canEat()) {
+		if(a_ent.getSize()>a_build.getSize()) {
+			a_ent.setSize(a_ent.getSize()+a_build.getSize());
+			a_build.setActive(false);
+		} else {
+			a_ent.revPos();
+		}
+	} else {
+		a_ent.revPos();
+	}
+	return true;
+}

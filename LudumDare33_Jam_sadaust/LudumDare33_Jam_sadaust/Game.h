@@ -1,6 +1,7 @@
 #pragma once
 
 #define num_Creatures 20
+#define num_Buildings 10
 
 #include "ResourceManager.h"
 #include "InputHandler.h"
@@ -8,6 +9,7 @@
 #include "PhysicsSystem.h"
 #include "Menu.h"
 #include "Entity.h"
+#include "Building.h"
 
 class Game{
 private:
@@ -25,12 +27,18 @@ private:
 	D3DMATERIAL9 defMat;
 	Entity player;
 	Entity creatures[num_Creatures];
+	Building buildings[num_Buildings];
 
+	float rotSpeed;
+	float angSpeed;
+	float angle;
+
+	/*
 	//render test
 	SpriteObj spriteTest;
 	PrimObj primTest;
 	RenInfo spriRen,primRen;
-
+	*/
 public:
 	bool devLost();
 	void resetDev(HWND& hWnd,HINSTANCE& hInsts);

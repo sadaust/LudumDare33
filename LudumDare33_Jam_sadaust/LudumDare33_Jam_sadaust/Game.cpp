@@ -49,7 +49,7 @@ void Game::init(HWND& hWnd, HINSTANCE& hInst,bool bWindowed) {
 	vidFram.setLightActive(0,true);
 
 	//set default cam values
-	camera.drawDist = 200.0f;
+	camera.drawDist = 20000.0f;
 	camera.fov_deg = 90.f;
 	camera.cam_pos.x = 0;
 	camera.cam_pos.y = 0;
@@ -73,7 +73,7 @@ void Game::init(HWND& hWnd, HINSTANCE& hInst,bool bWindowed) {
 	defMat.Specular = D3DXCOLOR(0.0f, 0.0f, 0.0f, 0.0f);		// Specular
 	defMat.Power = 0.0f;
 	//load player assets
-	temp.primInfo = resMan.loadPrim("Player",0,1,-0.25f,0.25f,0.25f,-0.25f);
+	temp.primInfo = resMan.loadPrim("Player",0,1,-0.5f,0.5f,0.5f,-0.5f);
 	temp.Tex = resMan.loadTexture("uvtest.png",0,0,0,0,D3DFMT_UNKNOWN,D3DPOOL_MANAGED,D3DX_DEFAULT,D3DX_DEFAULT,D3DCOLOR_XRGB(255,0,255),0);
 	temp.mat = &defMat;
 
@@ -82,14 +82,31 @@ void Game::init(HWND& hWnd, HINSTANCE& hInst,bool bWindowed) {
 	player.setEat(true);
 	player.setCollision(1,1);
 	player.setSize(1);
+	angle = 0;
 
-	//set up creatures
+	//setup creatures
 	for(int i = 0; i < num_Creatures; ++i) {
 		creatures[i].setActive(true);
 		creatures[i].setPos((5*i)+5,0,0);
 		creatures[i].setRender(temp);
 		creatures[i].setCollision(1,0.25f);
+		creatures[i].setSize(i+1);
 	}
+	//load building assets
+	temp.primInfo = resMan.loadPrim("Building",0,50.0f,-1.0f,1.0f,1.0f,-1.0f);
+	temp.Tex = resMan.loadTexture("uvtest.png",0,0,0,0,D3DFMT_UNKNOWN,D3DPOOL_MANAGED,D3DX_DEFAULT,D3DX_DEFAULT,D3DCOLOR_XRGB(255,0,255),0);
+	temp.mat = &defMat;
+	//setup buildings
+	for(int i = 0; i < num_Buildings; ++i) {
+		buildings[i].setSize(10*i);
+		buildings[i].setActive(true);
+		buildings[i].setRender(temp);
+		buildings[i].setCollision(-1.0f,1.0f,-1.0f,1.0,50,0);
+		buildings[i].setPos(0,0,(100*i)+100);
+	}
+	//set input
+	rotSpeed = 90;
+	angSpeed = 45;
 
 	/*
 	//render test
@@ -132,15 +149,36 @@ bool Game::update() {
 	//update game engine
 	input.update();
 	sndFram.update();
-	//
+	//update game state
+	//player input
 	input.getState(4,inState);
 	temp.x = inState.lX;
 	temp.y = inState.lY;
-	player.rotate(inState.rX);
+	player.rotate((inState.rX*dt)*rotSpeed);
+	angle -= (inState.rY*dt)*angSpeed;
+	if(angle >= 90)
+		angle = 89.9f;
+	else if(angle <=-90)
+		angle = -89.9f;
 	rotate2Dvector(&temp,D3DXToRadian(-player.getRot()));
 	player.setVel(temp.x,0,temp.y);
-	
+	//update player
 	player.update(dt);
+	//update creatures
+	for(int i = 0; i < num_Creatures; ++i) {
+		creatures[i].update(dt);
+	}
+	//do collision
+	for(int i = 0; i < num_Creatures; ++i) {
+		if(creatures[i].isActive())
+			if(physSys.SenseCollision(player,creatures[i]))
+				physSys.ResolveCollision(player,creatures[i]);
+	}
+	for(int i = 0; i < num_Buildings; ++i) {
+		if(buildings[i].isActive())
+			if(physSys.SenseCollision(player,buildings[i]))
+				physSys.ResolveCollision(player,buildings[i]);
+	}
 	//render
 	draw();
 	return true;
@@ -153,22 +191,21 @@ void Game::draw() {
 		camera.cam_look_pos.x = player.getPos().x;
 		camera.cam_look_pos.z = player.getPos().z;
 		camera.cam_look_pos.y = 1*player.getSize();
-		vidFram.rotateCam(camera,player.getSize()*2.0f,player.getRot(),45);
+		vidFram.rotateCam(camera,player.getSize()*2.0f,player.getRot(),angle);
 		vidFram.setCam(1,&camera);
-		//do collision
-		for(int i = 0; i < num_Creatures; ++i) {
-			if(creatures[i].isActive())
-				if(physSys.SenseCollision(player,creatures[i]))
-					physSys.ResolveCollision(player,creatures[i]);
-		}
 		//render
 		if(player.isActive())
 			vidFram.addRen(*player.getRender());
 		for(int i = 0; i < num_Creatures; ++i) {
-			if(creatures[i].isActive())
+			if(creatures[i].isActive()) {
 				vidFram.addRen(*creatures[i].getRender());
+			}
 		}
-		
+		for(int i = 0; i < num_Buildings; ++i) {
+			if(buildings[i].isActive()) {
+				vidFram.addRen(*buildings[i].getRender());
+			}
+		}
 		vidFram.Render();
 	}
 }

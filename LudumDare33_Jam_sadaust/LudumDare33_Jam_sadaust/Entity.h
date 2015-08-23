@@ -7,8 +7,10 @@ private:
 	D3DXVECTOR3 pos,lPos;
 	D3DXVECTOR3 velocity;
 	cylinder collisionInfo;
+	cylinder baseCol;
 	float size;
 	float rot;
+	float speed;
 	PrimObj m_prim;
 	RenInfo m_render;
 	bool active;
