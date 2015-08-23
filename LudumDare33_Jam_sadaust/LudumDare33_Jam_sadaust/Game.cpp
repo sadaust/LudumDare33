@@ -1,7 +1,15 @@
 #include "Game.h"
 #include <ctime>
 
+void rotate2Dvector(D3DXVECTOR2* a_vector, float a_angle) {
+	float Y = sinf(a_angle) * a_vector->x + cosf(a_angle) * a_vector->y;
+	float X = cosf(a_angle) * a_vector->x - sinf(a_angle) * a_vector->y;
+	a_vector->x = X;
+	a_vector->y = Y;
+}
+
 void Game::init(HWND& hWnd, HINSTANCE& hInst,bool bWindowed) {
+	PrimObj temp;
 	//start Direct X
 	vidFram.init(hWnd,hInst,bWindowed);
 	vidFram.setViewCount(1);
@@ -58,6 +66,31 @@ void Game::init(HWND& hWnd, HINSTANCE& hInst,bool bWindowed) {
 	lTime = cTime;
 	dt = 0;
 
+	//creat default material
+	defMat.Ambient = D3DXCOLOR(0.2f, 0.2f, 0.2f, 1.0f);
+	defMat.Diffuse = D3DXCOLOR(0.0f, 0.0f, 0.0f, 1.0f);		// Diffuse color reflected
+	defMat.Emissive = D3DXCOLOR(1.0f, 1.0f, 1.0f, 1.0f);		// Emissive color reflected
+	defMat.Specular = D3DXCOLOR(0.0f, 0.0f, 0.0f, 0.0f);		// Specular
+	defMat.Power = 0.0f;
+	//load player assets
+	temp.primInfo = resMan.loadPrim("Player",0,1,-0.25f,0.25f,0.25f,-0.25f);
+	temp.Tex = resMan.loadTexture("uvtest.png",0,0,0,0,D3DFMT_UNKNOWN,D3DPOOL_MANAGED,D3DX_DEFAULT,D3DX_DEFAULT,D3DCOLOR_XRGB(255,0,255),0);
+	temp.mat = &defMat;
+
+	player.setRender(temp);
+	player.setActive(true);
+	player.setEat(true);
+	player.setCollision(1,1);
+	player.setSize(1);
+
+	//set up creatures
+	for(int i = 0; i < num_Creatures; ++i) {
+		creatures[i].setActive(true);
+		creatures[i].setPos((5*i)+5,0,0);
+		creatures[i].setRender(temp);
+		creatures[i].setCollision(1,0.25f);
+	}
+
 	/*
 	//render test
 	//sprite test
@@ -70,12 +103,7 @@ void Game::init(HWND& hWnd, HINSTANCE& hInst,bool bWindowed) {
 	spriRen.locCamNum = 1;
 	spriRen.type = sprite;
 	//3d test
-	testMat.Ambient = D3DXCOLOR(0.2f, 0.2f, 0.2f, 1.0f);
-	testMat.Diffuse = D3DXCOLOR(0.0f, 0.0f, 0.0f, 1.0f);		// Diffuse color reflected
-	testMat.Emissive = D3DXCOLOR(1.0f, 1.0f, 1.0f, 1.0f);		// Emissive color reflected
-	testMat.Specular = D3DXCOLOR(0.0f, 0.0f, 0.0f, 0.0f);		// Specular
-	testMat.Power = 0.0f;
-	primTest.mat = &testMat;
+	primTest.mat = &defMat;
 	primTest.Tex = resMan.loadTexture("uvtest.png",0,0,0,0,D3DFMT_UNKNOWN,D3DPOOL_MANAGED,D3DX_DEFAULT,D3DX_DEFAULT,D3DCOLOR_XRGB(255,0,255),0);
 	primTest.primInfo = resMan.loadPrim("Cube",1.0f,1.0f,1.0f);
 	D3DXMatrixIdentity(&primTest.matrix);
@@ -95,6 +123,7 @@ void Game::resetDev(HWND& hWnd,HINSTANCE& hInsts) {
 }
 
 bool Game::update() {
+	D3DXVECTOR2 temp;
 	//get delta time
 	cTime = timeGetTime();
 	dt = (float)(cTime-lTime);
@@ -103,6 +132,15 @@ bool Game::update() {
 	//update game engine
 	input.update();
 	sndFram.update();
+	//
+	input.getState(4,inState);
+	temp.x = inState.lX;
+	temp.y = inState.lY;
+	player.rotate(inState.rX);
+	rotate2Dvector(&temp,D3DXToRadian(-player.getRot()));
+	player.setVel(temp.x,0,temp.y);
+	
+	player.update(dt);
 	//render
 	draw();
 	return true;
@@ -112,8 +150,25 @@ void Game::draw() {
 	if(!vidFram.rendererLost()) {
 		vidFram.clearRen();
 		//update cam
+		camera.cam_look_pos.x = player.getPos().x;
+		camera.cam_look_pos.z = player.getPos().z;
+		camera.cam_look_pos.y = 1*player.getSize();
+		vidFram.rotateCam(camera,player.getSize()*2.0f,player.getRot(),45);
 		vidFram.setCam(1,&camera);
-
+		//do collision
+		for(int i = 0; i < num_Creatures; ++i) {
+			if(creatures[i].isActive())
+				if(physSys.SenseCollision(player,creatures[i]))
+					physSys.ResolveCollision(player,creatures[i]);
+		}
+		//render
+		if(player.isActive())
+			vidFram.addRen(*player.getRender());
+		for(int i = 0; i < num_Creatures; ++i) {
+			if(creatures[i].isActive())
+				vidFram.addRen(*creatures[i].getRender());
+		}
+		
 		vidFram.Render();
 	}
 }
