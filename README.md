@@ -8,14 +8,16 @@ The idea I have for the game is you start out small then by eating things you ge
 The things in the game would be small animals, people and buildings. You start out eating the small animals then you go for people, then you start attacking buildings so you can eat the rubble and eventualy be able to eat a full building.
 
 # TO DO
-Make base entity for Player and Creatures
 
-Make Player
 
-Make Creatures (small animals/humans)
+Enhance Creatures (small animals/humans)
 
 Make World System
 
 Make Buildings' entity 
 
-Modify physics system
+Create collision for buildings system
+
+Create art?
+
+Create Basic AI?
