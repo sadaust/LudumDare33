@@ -51,9 +51,10 @@ void Entity::update(double dt) {
 }
 
 void Entity::setCollision(float height, float width) {
-	collisionInfo.height = height;
-	collisionInfo.radius = width;
-	baseCol = collisionInfo;
+	baseCol.height = height;
+	baseCol.radius = width;
+	collisionInfo.height = height * size;
+	collisionInfo.radius = width * size;
 }
 
 void Entity::setSize(float a_size) {

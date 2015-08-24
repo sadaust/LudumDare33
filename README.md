@@ -9,14 +9,12 @@ The things in the game would be small animals, people and buildings. You start o
 
 # TO DO
 
-Make World System
-
-Fix Collision
-
-Enhance Creatures (small animals/humans) (basic AI)
-
 Come up with a name
 
-Create art?
+make a level
 
-Create Basic AI?
+# Credits
+
+Creature and Player Art: modified enemy art from another project orginal by Joshua Foly(another programmer)
+
+Physics: from the game engine for Elimbination physics was orginaly made by Joshua Foly rest of the engine was me

@@ -74,6 +74,7 @@ bool  PhysicsSystem::ResolveCollision(Entity& a_player, Entity& a_player2){
 		if(a_player.getSize() >= a_player2.getSize()) {
 			a_player.setSize(a_player.getSize()+a_player2.getSize());
 			a_player2.setActive(false);
+			return true;
 		} else {
 			a_player.revPos();
 			a_player2.revPos();
@@ -82,7 +83,7 @@ bool  PhysicsSystem::ResolveCollision(Entity& a_player, Entity& a_player2){
 		a_player.revPos();
 		a_player2.revPos();
 	}
-	return true;
+	return false;
 }
 
 bool PhysicsSystem::ResolveCollision(Entity& a_ent, Building& a_build) {
@@ -90,11 +91,12 @@ bool PhysicsSystem::ResolveCollision(Entity& a_ent, Building& a_build) {
 		if(a_ent.getSize()>a_build.getSize()) {
 			a_ent.setSize(a_ent.getSize()+a_build.getSize());
 			a_build.setActive(false);
+			return true;
 		} else {
 			a_ent.revPos();
 		}
 	} else {
 		a_ent.revPos();
 	}
-	return true;
+	return false;
 }

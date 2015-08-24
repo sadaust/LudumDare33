@@ -1,7 +1,7 @@
 #pragma once
 
-#define num_Creatures 20
-#define num_Buildings 10
+#define num_Creatures 200
+#define num_Buildings 100
 
 #include "ResourceManager.h"
 #include "InputHandler.h"
@@ -10,6 +10,15 @@
 #include "Menu.h"
 #include "Entity.h"
 #include "Building.h"
+#include "Map.h"
+
+#include <sstream>
+
+enum state {
+	preGame,
+	runGame,
+	postGame
+};
 
 class Game{
 private:
@@ -28,10 +37,20 @@ private:
 	Entity player;
 	Entity creatures[num_Creatures];
 	Building buildings[num_Buildings];
+	Map level;
+	state gameState;
+	double timeTaken;
+	listenProp sndLis;
+	SoundStruct* eat;
+	TextStruct texOut;
+	RenInfo texRen;
+	std::string winMsg;
 
 	float rotSpeed;
 	float angSpeed;
 	float angle;
+
+	std::stringstream ss;
 
 	/*
 	//render test

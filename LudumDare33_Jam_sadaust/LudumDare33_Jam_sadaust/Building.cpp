@@ -31,7 +31,25 @@ RenInfo* Building::getRender() {
 	return &m_render;
 }
 
+void Building::setSize(float a_size) {
+	size = a_size;
+	//update colision
+	colInfo.back = baseCol.back*size;
+	colInfo.front = baseCol.front*size;
+	colInfo.left = baseCol.left*size;
+	colInfo.right = baseCol.right*size;
+	colInfo.top = baseCol.top;
+	colInfo.bottom = baseCol.bottom;
+}
+
 void Building::setCollision(float left,float right,float back,float front,float top,float bottom) {
+	baseCol.back = back;
+	baseCol.front = front;
+	baseCol.left = left;
+	baseCol.right = right;
+	baseCol.top = top;
+	baseCol.bottom = bottom;
+
 	colInfo.back = back*size;
 	colInfo.front = front*size;
 	colInfo.left = left*size;

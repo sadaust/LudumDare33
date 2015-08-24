@@ -9,6 +9,7 @@ void rotate2Dvector(D3DXVECTOR2* a_vector, float a_angle) {
 }
 
 void Game::init(HWND& hWnd, HINSTANCE& hInst,bool bWindowed) {
+	gameState = preGame;
 	PrimObj temp;
 	//start Direct X
 	vidFram.init(hWnd,hInst,bWindowed);
@@ -74,7 +75,7 @@ void Game::init(HWND& hWnd, HINSTANCE& hInst,bool bWindowed) {
 	defMat.Power = 0.0f;
 	//load player assets
 	temp.primInfo = resMan.loadPrim("Player",0,1,-0.5f,0.5f,0.5f,-0.5f);
-	temp.Tex = resMan.loadTexture("uvtest.png",0,0,0,0,D3DFMT_UNKNOWN,D3DPOOL_MANAGED,D3DX_DEFAULT,D3DX_DEFAULT,D3DCOLOR_XRGB(255,0,255),0);
+	temp.Tex = resMan.loadTexture("player.png",0,0,0,0,D3DFMT_UNKNOWN,D3DPOOL_MANAGED,D3DX_DEFAULT,D3DX_DEFAULT,D3DCOLOR_XRGB(255,0,255),0);
 	temp.mat = &defMat;
 
 	player.setRender(temp);
@@ -84,6 +85,12 @@ void Game::init(HWND& hWnd, HINSTANCE& hInst,bool bWindowed) {
 	player.setSize(1);
 	angle = 0;
 
+	timeTaken = 0;
+
+	//load creature assets
+	temp.primInfo = resMan.loadPrim("creature",0,1,-0.5f,0.5f,0.5f,-0.5f);
+	temp.Tex = resMan.loadTexture("enemy.png",0,0,0,0,D3DFMT_UNKNOWN,D3DPOOL_MANAGED,D3DX_DEFAULT,D3DX_DEFAULT,D3DCOLOR_XRGB(255,0,255),0);
+	temp.mat = &defMat;
 	//setup creatures
 	for(int i = 0; i < num_Creatures; ++i) {
 		creatures[i].setActive(true);
@@ -94,7 +101,7 @@ void Game::init(HWND& hWnd, HINSTANCE& hInst,bool bWindowed) {
 	}
 	//load building assets
 	temp.primInfo = resMan.loadPrim("Building",0,50.0f,-1.0f,1.0f,1.0f,-1.0f);
-	temp.Tex = resMan.loadTexture("uvtest.png",0,0,0,0,D3DFMT_UNKNOWN,D3DPOOL_MANAGED,D3DX_DEFAULT,D3DX_DEFAULT,D3DCOLOR_XRGB(255,0,255),0);
+	temp.Tex = resMan.loadTexture("building.png",0,0,0,0,D3DFMT_UNKNOWN,D3DPOOL_MANAGED,D3DX_DEFAULT,D3DX_DEFAULT,D3DCOLOR_XRGB(255,0,255),0);
 	temp.mat = &defMat;
 	//setup buildings
 	for(int i = 0; i < num_Buildings; ++i) {
@@ -105,8 +112,11 @@ void Game::init(HWND& hWnd, HINSTANCE& hInst,bool bWindowed) {
 		buildings[i].setPos(0,0,(100*i)+100);
 	}
 	//set input
-	rotSpeed = 90;
-	angSpeed = 45;
+	rotSpeed = 0.45f;
+	angSpeed = 0.15f;
+
+	level.setMat(&defMat);
+	level.loadMap("map.txt",num_Buildings,num_Creatures,buildings,creatures,&resMan);
 
 	/*
 	//render test
@@ -128,6 +138,21 @@ void Game::init(HWND& hWnd, HINSTANCE& hInst,bool bWindowed) {
 	primRen.locCamNum = 1;
 	primRen.type = primitive;
 	*/
+	sndLis.up.x = 0;
+	sndLis.up.y = 1;
+	sndLis.up.z = 0;
+	eat = resMan.loadSound("eat.wav",100,1000,1);
+	sndFram.setNumListen(1);
+	sndFram.setListenProp(1,sndLis);
+	texOut.textColor = D3DCOLOR(0xFFFFFFFF);
+	texOut.text = "Use WASD to move Mouse to move camera, left click to start";
+	texOut.rec.left = 0.5;
+	texOut.rec.top = 0.5;
+	texOut.rec.right = 0.5;
+	texOut.rec.bottom = 0.5;
+	texRen.asset = &texOut;
+	texRen.locCamNum = 1;
+	texRen.type = text;
 }
 
 bool Game::devLost() {
@@ -140,8 +165,10 @@ void Game::resetDev(HWND& hWnd,HINSTANCE& hInsts) {
 }
 
 bool Game::update() {
+	bool win;
 	D3DXVECTOR2 temp;
 	//get delta time
+	win = true;
 	cTime = timeGetTime();
 	dt = (float)(cTime-lTime);
 	dt /= CLOCKS_PER_SEC;
@@ -150,34 +177,94 @@ bool Game::update() {
 	input.update();
 	sndFram.update();
 	//update game state
-	//player input
-	input.getState(4,inState);
-	temp.x = inState.lX;
-	temp.y = inState.lY;
-	player.rotate((inState.rX*dt)*rotSpeed);
-	angle -= (inState.rY*dt)*angSpeed;
-	if(angle >= 90)
-		angle = 89.9f;
-	else if(angle <=-90)
-		angle = -89.9f;
-	rotate2Dvector(&temp,D3DXToRadian(-player.getRot()));
-	player.setVel(temp.x,0,temp.y);
-	//update player
-	player.update(dt);
-	//update creatures
-	for(int i = 0; i < num_Creatures; ++i) {
-		creatures[i].update(dt);
-	}
-	//do collision
-	for(int i = 0; i < num_Creatures; ++i) {
-		if(creatures[i].isActive())
-			if(physSys.SenseCollision(player,creatures[i]))
-				physSys.ResolveCollision(player,creatures[i]);
-	}
-	for(int i = 0; i < num_Buildings; ++i) {
-		if(buildings[i].isActive())
-			if(physSys.SenseCollision(player,buildings[i]))
-				physSys.ResolveCollision(player,buildings[i]);
+	if(gameState == preGame) {
+		input.getState(4,inState);
+		if(inState.buttons[binds::leftAttack]) {
+			texOut.rec.left = 0.5;
+			texOut.rec.top = 0.0;
+			texOut.rec.right = 0.5;
+			texOut.rec.bottom = 0.5;
+			gameState = runGame;
+		}
+	} else if(gameState == runGame) {
+		//player input
+		input.getState(4,inState);
+		temp.x = inState.lX;
+		temp.y = inState.lY;
+		player.rotate((inState.rX)*rotSpeed);
+		angle -= (inState.rY)*angSpeed;
+		if(angle >= 90)
+			angle = 89.9f;
+		else if(angle <=-90)
+			angle = -89.9f;
+		rotate2Dvector(&temp,D3DXToRadian(-player.getRot()));
+		player.setVel(temp.x,0,temp.y);
+		//update player
+		player.update(dt);
+		//update creatures
+		for(int i = 0; i < num_Creatures; ++i) {
+			creatures[i].update(dt);
+		}
+		//make sure player is still in play area
+		if(player.getPos().x>level.getArea().front||player.getPos().x<level.getArea().back||player.getPos().z>level.getArea().right||player.getPos().z<level.getArea().left)
+			player.revPos();
+		//do collision
+		for(int i = 0; i < num_Creatures; ++i) {
+			if(creatures[i].isActive()) {
+				if(physSys.SenseCollision(player,creatures[i])) {
+					if(physSys.ResolveCollision(player,creatures[i]))
+						sndFram.Play(*eat,player.getPos().x,player.getPos().y,player.getPos().z,0,0,0);
+				}
+				win = false;
+			}
+		}
+		for(int i = 0; i < num_Buildings; ++i) {
+			if(buildings[i].isActive()) {
+				if(physSys.SenseCollision(player,buildings[i])) {
+					if(physSys.ResolveCollision(player,buildings[i]))
+						sndFram.Play(*eat,player.getPos().x,player.getPos().y,player.getPos().z,0,0,0);
+				}
+				win = false;
+			}
+		}
+		sndLis.pos.x = player.getPos().x;
+		sndLis.pos.y = player.getPos().y;
+		sndLis.pos.z = player.getPos().z;
+		sndLis.vel.x = 0;
+		sndLis.vel.y = 0;
+		sndLis.vel.z = 0;
+		sndFram.setListenProp(1,sndLis);
+		timeTaken += dt;
+		ss.str("");
+		ss<<"Time: "<<(int)timeTaken<<"\n";
+		winMsg = ss.str();
+		texOut.text = winMsg;
+		if(win) {
+			texOut.rec.left = 0.5;
+			texOut.rec.top = 0.5;
+			texOut.rec.right = 0.5;
+			texOut.rec.bottom = 0.5;
+			timeTaken = (int)timeTaken;
+			ss.str("");
+			ss<<"YOU WIN! It took "<<timeTaken<<" seconds. Left Click to restart\n";
+			winMsg = ss.str();
+			texOut.text = winMsg;
+			gameState = postGame;
+		}
+	} else if(gameState == postGame) {
+		input.getState(4,inState);
+		if(inState.buttons[binds::leftAttack]) {
+			player.setPos(0,0,0);
+			player.setRot(0);
+			player.setSize(1);
+			level.loadMap("map.txt",num_Buildings,num_Creatures,buildings,creatures,&resMan);
+			texOut.rec.left = 0.5;
+			texOut.rec.top = 0.0;
+			texOut.rec.right = 0.5;
+			texOut.rec.bottom = 0.5;
+			timeTaken = 0;
+			gameState = runGame;
+		}
 	}
 	//render
 	draw();
@@ -194,6 +281,7 @@ void Game::draw() {
 		vidFram.rotateCam(camera,player.getSize()*2.0f,player.getRot(),angle);
 		vidFram.setCam(1,&camera);
 		//render
+		vidFram.addRen(texRen);
 		if(player.isActive())
 			vidFram.addRen(*player.getRender());
 		for(int i = 0; i < num_Creatures; ++i) {
@@ -206,6 +294,8 @@ void Game::draw() {
 				vidFram.addRen(*buildings[i].getRender());
 			}
 		}
+		vidFram.addRen(level.getRen());
+
 		vidFram.Render();
 	}
 }
