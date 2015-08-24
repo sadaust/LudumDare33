@@ -1,5 +1,6 @@
 #include "Game.h"
 #include <ctime>
+#include <fstream>
 
 void rotate2Dvector(D3DXVECTOR2* a_vector, float a_angle) {
 	float Y = sinf(a_angle) * a_vector->x + cosf(a_angle) * a_vector->y;
@@ -9,6 +10,7 @@ void rotate2Dvector(D3DXVECTOR2* a_vector, float a_angle) {
 }
 
 void Game::init(HWND& hWnd, HINSTANCE& hInst,bool bWindowed) {
+	std::ifstream file;
 	gameState = preGame;
 	PrimObj temp;
 	//start Direct X
@@ -111,12 +113,38 @@ void Game::init(HWND& hWnd, HINSTANCE& hInst,bool bWindowed) {
 		buildings[i].setCollision(-1.0f,1.0f,-1.0f,1.0,50,0);
 		buildings[i].setPos(0,0,(100*i)+100);
 	}
-	//set input
+	//load default settings
 	rotSpeed = 0.45f;
 	angSpeed = 0.15f;
 
 	level.setMat(&defMat);
 	level.loadMap("map.txt",num_Buildings,num_Creatures,buildings,creatures,&resMan);
+	sndLis.up.x = 0;
+	sndLis.up.y = 1;
+	sndLis.up.z = 0;
+	eat = resMan.loadSound("eat.wav",100,1000,1);
+	sndFram.setNumListen(1);
+	sndFram.setListenProp(1,sndLis);
+	texOut.textColor = D3DCOLOR(0xFFFFFFFF);
+	texOut.text = "Use WASD to move Mouse to move camera, left click to start";
+	texOut.rec.left = 0.5;
+	texOut.rec.top = 0.5;
+	texOut.rec.right = 0.5;
+	texOut.rec.bottom = 0.5;
+	texRen.asset = &texOut;
+	texRen.locCamNum = 1;
+	texRen.type = text;
+	LPCSTR mapName;
+	file.open("options.txt");
+	if(file.is_open()) {
+		file>>rotSpeed;
+		file.ignore();
+		file>>angSpeed;
+		file.ignore();
+		file>>winMsg;
+		mapName = winMsg.c_str();
+		level.loadMap(mapName,num_Buildings,num_Creatures,buildings,creatures,&resMan);
+	}
 
 	/*
 	//render test
@@ -138,21 +166,8 @@ void Game::init(HWND& hWnd, HINSTANCE& hInst,bool bWindowed) {
 	primRen.locCamNum = 1;
 	primRen.type = primitive;
 	*/
-	sndLis.up.x = 0;
-	sndLis.up.y = 1;
-	sndLis.up.z = 0;
-	eat = resMan.loadSound("eat.wav",100,1000,1);
-	sndFram.setNumListen(1);
-	sndFram.setListenProp(1,sndLis);
-	texOut.textColor = D3DCOLOR(0xFFFFFFFF);
-	texOut.text = "Use WASD to move Mouse to move camera, left click to start";
-	texOut.rec.left = 0.5;
-	texOut.rec.top = 0.5;
-	texOut.rec.right = 0.5;
-	texOut.rec.bottom = 0.5;
-	texRen.asset = &texOut;
-	texRen.locCamNum = 1;
-	texRen.type = text;
+
+
 }
 
 bool Game::devLost() {
